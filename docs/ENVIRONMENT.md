@@ -1,0 +1,183 @@
+# Scketch Relay 실행 환경과 서버 구성
+
+## 1. 기술 구성
+
+| 영역 | 사용 기술 | 역할 |
+| --- | --- | --- |
+| 프론트엔드 | Next.js 16, React 19, TypeScript | 화면 렌더링과 사용자 입력 처리 |
+| 애플리케이션 서버 | Next.js Route Handler | 방 생성·참가·조회·시작 API와 권한 검증 |
+| 데이터베이스 | Supabase PostgreSQL | 방, 참가자, 채팅, 게임 데이터 저장 |
+| 실시간 통신 | Supabase Realtime | 참가자·방·채팅 변경 알림, 접속 상태 공유 |
+| 스타일 | Tailwind CSS 4 | 반응형 UI 스타일 |
+| 테스트 | Node.js 내장 테스트 러너 | 입력 검증 등 순수 함수 단위 테스트 |
+
+## 2. 전체 요청 흐름
+
+```text
+사용자 브라우저
+  │
+  ├─ Next.js 페이지 요청
+  │    └─ 화면 렌더링
+  │
+  ├─ Next.js /api/rooms 요청
+  │    ├─ 입력값 검증
+  │    ├─ HttpOnly 참가 쿠키 검증
+  │    └─ Supabase 데이터 조회·변경
+  │
+  └─ Supabase Realtime 연결
+       └─ 방과 참가자 변경 신호 수신
+
+Supabase PostgreSQL
+  └─ rooms, players, chat_messages 및 이후 게임 데이터 저장
+```
+
+브라우저는 데이터베이스를 직접 읽거나 변경하지 않는다. 중요한 데이터 작업은 Next.js 서버 API를 통하고, Realtime은 변경 사실을 알려주는 용도로 사용한다.
+
+## 3. WAS와 Tomcat이 필요 없는 이유
+
+현재 프로젝트에는 별도의 Tomcat 서버가 필요하지 않다.
+
+- Tomcat은 주로 Java Servlet이나 Spring 기반 웹 애플리케이션을 실행하는 WAS다.
+- 이 프로젝트는 Java가 아닌 Node.js 기반 Next.js 애플리케이션이다.
+- Next.js 서버가 페이지 렌더링과 API 실행을 모두 담당한다.
+- Supabase가 PostgreSQL 데이터베이스와 실시간 통신을 담당한다.
+
+따라서 현재 서버 구성은 `Next.js + Supabase`로 충분하다.
+
+Tomcat이 필요해지는 경우는 백엔드를 Spring Boot 또는 Java 기반 서비스로 별도 개발하도록 아키텍처를 변경할 때다. 그 경우에도 Spring Boot 내장 Tomcat을 사용할 수 있으므로 외부 Tomcat 설치가 반드시 필요한 것은 아니다.
+
+## 4. 로컬 개발 환경
+
+### 필수 프로그램
+
+- Node.js 22 이상 권장
+- npm
+- Git
+- 최신 Chrome, Edge 또는 Firefox
+
+### 최초 설치
+
+```bash
+npm install
+```
+
+### 개발 서버 실행
+
+```bash
+npm run dev
+```
+
+기본 접속 주소:
+
+```text
+http://localhost:3000
+```
+
+포트 3000이 이미 사용 중이면 Next.js가 3001과 같은 다른 포트를 안내할 수 있다.
+
+### 2명 테스트
+
+1. 일반 브라우저 창에서 닉네임을 입력하고 방을 만든다.
+2. 대기실에서 초대 링크를 복사한다.
+3. 시크릿 창 또는 다른 브라우저에서 초대 링크를 연다.
+4. 다른 닉네임으로 참가한다.
+5. 두 창에서 참가자 목록, 온라인 상태와 방장 표시를 확인한다.
+6. 방장 창에서 게임 시작 버튼을 확인한다.
+
+서로 다른 브라우저 저장 공간과 쿠키를 사용해야 두 명의 사용자로 인식되므로 일반 탭 두 개보다 시크릿 창이나 다른 브라우저 사용을 권장한다.
+
+## 5. 환경 변수
+
+로컬 비밀 설정은 프로젝트 루트의 `.env.local`에 저장한다.
+
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```
+
+### 공개 범위
+
+- `NEXT_PUBLIC_SUPABASE_URL`: 브라우저에 공개 가능
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`: 브라우저에 공개 가능한 제한 키
+- `SUPABASE_SERVICE_ROLE_KEY`: 서버 전용 비밀 키
+
+`SUPABASE_SERVICE_ROLE_KEY`에는 절대로 `NEXT_PUBLIC_` 접두사를 붙이면 안 된다. `.env.local`은 Git에서 제외되며 GitHub에 커밋하지 않는다.
+
+새 개발 환경을 구성할 때는 `.env.example`을 참고하고 실제 값은 Supabase Dashboard에서 가져온다. 자세한 절차는 [SUPABASE_SETUP.md](./SUPABASE_SETUP.md)를 참고한다.
+
+## 6. 개발 및 검증 명령
+
+```bash
+# 개발 서버
+npm run dev
+
+# 코드 규칙 검사
+npm run lint
+
+# 단위 테스트
+npm test
+
+# 운영 빌드 검사
+npm run build
+
+# 빌드된 운영 서버 실행
+npm run start
+```
+
+기능 작업을 완료할 때는 최소한 lint, test, build를 모두 통과시킨다.
+
+## 7. 데이터베이스 변경
+
+DB 구조는 `supabase/migrations` 폴더의 SQL 파일로 관리한다.
+
+원격 Supabase 프로젝트에 새 마이그레이션을 적용할 때 사용한다.
+
+```bash
+npx supabase db push
+```
+
+이미 적용된 마이그레이션 파일을 수정하는 대신 새로운 번호의 마이그레이션을 추가하는 것을 원칙으로 한다.
+
+## 8. 운영 배포 구성
+
+권장 MVP 운영 구성:
+
+```text
+사용자
+  ↓ HTTPS
+Vercel의 Next.js 애플리케이션
+  ↓ HTTPS / WebSocket
+Supabase PostgreSQL + Realtime
+```
+
+Vercel에 배포할 때 `.env.local` 파일을 올리지 않고 프로젝트 설정의 Environment Variables에 동일한 세 값을 등록한다.
+
+직접 서버를 운영할 경우에는 Node.js로 `npm run start`를 실행한다. 도메인, HTTPS, 프로세스 재시작이 필요하면 Nginx와 PM2 또는 컨테이너를 추가할 수 있지만 MVP 단계에서는 필수가 아니다.
+
+## 9. 보안 원칙
+
+- Service Role Key는 서버 코드에서만 사용한다.
+- 브라우저는 Supabase 테이블을 직접 조회하지 않는다.
+- 참가자 인증 토큰은 JavaScript에서 읽을 수 없는 HttpOnly 쿠키에 저장한다.
+- DB 테이블에는 RLS를 활성화한다.
+- 입력값과 방장 권한은 항상 서버에서 다시 검증한다.
+- 실제 비밀 키와 `.env.local`은 GitHub, 로그, 문서에 기록하지 않는다.
+
+## 10. 채팅 운영 원칙
+
+- 채팅은 방에 참가한 사용자만 읽고 전송할 수 있다.
+- 대기실 상태가 `waiting`일 때만 새 메시지를 전송할 수 있다.
+- 방장이 게임을 시작해 상태가 `playing`으로 바뀌면 모든 참가자의 채팅 입력을 잠근다.
+- 메시지는 공백을 제외하고 1~200자로 제한한다.
+- 짧은 시간에 반복 전송하는 요청은 서버에서 차단한다.
+- 채팅 변경은 Supabase Realtime으로 알리고 실제 메시지 조회는 Next.js 서버 API를 통한다.
+- 방이 삭제되면 해당 방의 채팅 기록도 함께 삭제한다.
+
+## 11. 현재 환경 정보
+
+- Supabase 프로젝트 ID: `hjkcqlmfzpuoatgjurhp`
+- Supabase 리전: 서울 `ap-northeast-2`
+- Git 기본 브랜치: `main`
+- 운영 배포: 아직 미설정
+- 별도 Tomcat/WAS: 사용하지 않음
