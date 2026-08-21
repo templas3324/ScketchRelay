@@ -47,7 +47,12 @@ export async function DELETE(_request: Request, context: { params: Promise<{ cod
 
     const { data: room, error: roomError } = await admin.from("rooms").select("host_player_id, status").eq("code", code).single();
     if (roomError) throw roomError;
-    if (room.status !== "waiting") return errorResponse("게임이 시작된 뒤에는 방을 나갈 수 없어요.", 409);
+    if (room.status !== "waiting") {
+      const { error: leaveError } = await admin.rpc("mark_player_left", { target_room_code: code, actor_player_id: member.id });
+      if (leaveError) throw leaveError;
+      cookieStore.delete(cookieName);
+      return new Response(null, { status: 204 });
+    }
 
     const { error: deleteError } = await admin.from("players").delete().eq("id", member.id);
     if (deleteError) throw deleteError;

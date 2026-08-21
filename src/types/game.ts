@@ -79,6 +79,14 @@ export interface GameSnapshot {
   playerCount: number;
   roomStatus: RoomStatus;
   prompt: Pick<Submission, "kind" | "content"> | null;
+  hostPlayerId: string;
+  players: GamePlayerStatus[];
+}
+
+export interface GamePlayerStatus {
+  id: string;
+  nickname: string;
+  status: "online" | "offline" | "left";
 }
 
 export interface ChatMessage {

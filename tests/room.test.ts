@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { validateChatMessage } from "../src/lib/chat.ts";
 import { readJsonBody } from "../src/lib/api-request.ts";
-import { assignedStarterIndex, validateDrawing, validateFirstSentence, validateGameSettings } from "../src/lib/game.ts";
+import { assignedStarterIndex, playerConnectionStatus, validateDrawing, validateFirstSentence, validateGameSettings } from "../src/lib/game.ts";
 import { createRoomCode, isValidRoomCode, normalizeRoomCode, validateJoinRequest, validateNickname } from "../src/lib/room.ts";
 
 test("방 코드 입력을 대문자 영숫자 6자리까지 정규화한다", () => {
@@ -66,4 +66,11 @@ test("JSON 요청은 선언 여부와 관계없이 실제 바이트 크기를 �
   assert.equal(oversized.status, 413);
   const valid = await readJsonBody(new Request("http://localhost", { method: "POST", body: '{"content":"안녕"}' }), 100);
   assert.deepEqual(valid, { data: { content: "안녕" } });
+});
+
+test("heartbeat 시각과 중도 이탈 여부로 연결 상태를 구분한다", () => {
+  const now = Date.parse("2026-08-21T12:00:00Z");
+  assert.equal(playerConnectionStatus("2026-08-21T11:59:45Z", null, now), "online");
+  assert.equal(playerConnectionStatus("2026-08-21T11:59:20Z", null, now), "offline");
+  assert.equal(playerConnectionStatus("2026-08-21T12:00:00Z", "2026-08-21T12:00:01Z", now), "left");
 });

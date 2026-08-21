@@ -36,3 +36,8 @@ export function validateDrawing(input: unknown) {
   if (content.length > 1_000_000) return { error: "그림 데이터가 너무 커요. 선을 조금 단순하게 그려 주세요." } as const;
   return { value: content } as const;
 }
+
+export function playerConnectionStatus(lastSeenAt: string, leftAt: string | null, now = Date.now()) {
+  if (leftAt) return "left" as const;
+  return new Date(lastSeenAt).getTime() >= now - 30_000 ? "online" as const : "offline" as const;
+}
