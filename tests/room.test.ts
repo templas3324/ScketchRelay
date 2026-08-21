@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { validateChatMessage } from "../src/lib/chat.ts";
+import { readJsonBody } from "../src/lib/api-request.ts";
 import { assignedStarterIndex, validateDrawing, validateFirstSentence, validateGameSettings } from "../src/lib/game.ts";
 import { createRoomCode, isValidRoomCode, normalizeRoomCode, validateJoinRequest, validateNickname } from "../src/lib/room.ts";
 
@@ -58,4 +59,11 @@ test("릴레이는 라운드마다 이전 참가자의 것을 순환 배정한�
 test("그림은 크기가 제한된 PNG Data URL만 허용한다", () => {
   assert.equal(validateDrawing({ content: "https://example.com/drawing.png" }).error, "PNG 형식의 그림만 제출할 수 있어요.");
   assert.deepEqual(validateDrawing({ content: "data:image/png;base64,iVBORw0KGgoAAAA" }), { value: "data:image/png;base64,iVBORw0KGgoAAAA" });
+});
+
+test("JSON 요청은 선언 여부와 관계없이 실제 바이트 크기를 제한한다", async () => {
+  const oversized = await readJsonBody(new Request("http://localhost", { method: "POST", body: JSON.stringify({ content: "가".repeat(20) }) }), 20);
+  assert.equal(oversized.status, 413);
+  const valid = await readJsonBody(new Request("http://localhost", { method: "POST", body: '{"content":"안녕"}' }), 100);
+  assert.deepEqual(valid, { data: { content: "안녕" } });
 });

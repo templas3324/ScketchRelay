@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { databaseErrorResponse, errorResponse } from "@/lib/api-response";
+import { readJsonBody } from "@/lib/api-request";
 import { validateDrawing, validateFirstSentence } from "@/lib/game";
 import { findAssignedRelay } from "@/lib/game-server";
 import { findRoomMember, roomCodeFromPath } from "@/lib/room-server";
@@ -9,7 +10,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export async function POST(request: Request, context: { params: Promise<{ code: string }> }) {
   const code = roomCodeFromPath((await context.params).code);
   if (!code) return errorResponse("방 코드 형식이 올바르지 않아요.", 400);
-  const body = await request.json().catch(() => null);
+  const parsedBody = await readJsonBody(request, 1_100_000);
+  if (!("data" in parsedBody)) return errorResponse(parsedBody.error, parsedBody.status);
+  const body = parsedBody.data;
   try {
     const admin = createAdminClient();
     const member = await findRoomMember(admin, code, (await cookies()).get(roomSessionCookieName(code))?.value);

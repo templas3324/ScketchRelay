@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
+import { GameGuideButton } from "@/components/game/game-guide-button";
 import { StatusMessage } from "@/components/ui/status-message";
 import { getBrowserClient } from "@/lib/supabase/browser";
 import type { RoomSnapshot } from "@/types/game";
@@ -156,7 +157,7 @@ export function Lobby({ code }: { code: string }) {
   return (
     <main className="min-h-screen bg-[#fff8e8] px-5 py-8 text-[#272334]">
       <div className="mx-auto max-w-3xl">
-        <header className="flex items-center justify-between"><Link href="/" className="text-xl font-black">✏️ Scketch Relay</Link><span className="rounded-full bg-[#dff7f2] px-3 py-1 text-sm font-black">{snapshot.room.status === "waiting" ? "참가자 대기 중" : "게임 시작됨"}</span></header>
+        <header className="flex items-center justify-between gap-3"><Link href="/" className="text-xl font-black">✏️ Scketch Relay</Link><div className="flex items-center gap-2"><GameGuideButton /><span className="hidden rounded-full bg-[#dff7f2] px-3 py-1 text-sm font-black sm:inline">{snapshot.room.status === "waiting" ? "참가자 대기 중" : "게임 시작됨"}</span></div></header>
         <section className="mt-10 rounded-[32px] border-[3px] border-[#272334] bg-white p-6 shadow-[9px_10px_0_#272334] sm:p-9">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div><p className="text-sm font-black text-[#ff6b4a]">ROOM CODE</p><h1 className="font-mono text-4xl font-black tracking-[0.18em] sm:text-5xl">{code}</h1></div>

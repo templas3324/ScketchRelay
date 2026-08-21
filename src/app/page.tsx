@@ -1,5 +1,6 @@
 import { Hero } from "@/components/home/hero";
 import { RoomPanel } from "@/components/home/room-panel";
+import { GameGuideButton } from "@/components/game/game-guide-button";
 import { normalizeRoomCode } from "@/lib/room";
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ room?: string | string[] }> }) {
@@ -17,7 +18,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ r
               <p className="text-xs font-semibold text-[#71697b]">그림으로 이어지는 엉뚱한 이야기</p>
             </div>
           </div>
-          <span className="rounded-full border-2 border-[#272334] bg-white px-3 py-1 text-xs font-bold shadow-[2px_2px_0_#272334]">MVP 0.1</span>
+          <GameGuideButton />
         </nav>
 
         <div className="grid flex-1 items-center gap-10 py-12 lg:grid-cols-[1.08fr_.92fr]">

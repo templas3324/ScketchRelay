@@ -1,17 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { databaseErrorResponse, errorResponse } from "@/lib/api-response";
+import { readJsonBody } from "@/lib/api-request";
 import { createRoomCode, validateNickname } from "@/lib/room";
 import { createSessionToken, hashSessionToken, roomSessionCookieName } from "@/lib/room-session";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(request: Request) {
-  let body: { nickname?: unknown };
-  try {
-    body = await request.json();
-  } catch {
-    return errorResponse("요청 형식이 올바르지 않아요.", 400);
-  }
+  const parsedBody = await readJsonBody(request, 2_000);
+  if (!("data" in parsedBody)) return errorResponse(parsedBody.error, parsedBody.status);
+  const body = parsedBody.data as { nickname?: unknown };
 
   const nickname = typeof body.nickname === "string" ? body.nickname.trim() : "";
   const validationMessage = validateNickname(nickname);

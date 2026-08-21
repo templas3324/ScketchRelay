@@ -12,6 +12,9 @@ export async function GET(_request: Request, context: { params: Promise<{ code: 
     const admin = createAdminClient();
     const member = await findRoomMember(admin, code, (await cookies()).get(roomSessionCookieName(code))?.value);
     if (!member) return errorResponse("이 방의 참가 정보를 찾을 수 없어요.", 401);
+    // 별도 스케줄러 없이도 활성 참가자의 조회를 기점으로 만료된 라운드를 원자적으로 마감한다.
+    const { error: expireError } = await admin.rpc("expire_game_round", { target_room_code: code });
+    if (expireError) throw expireError;
     const [{ data: game, error: gameError }, { data: room, error: roomError }] = await Promise.all([
       admin.from("games").select("id, room_code, phase, current_round, total_rounds, deadline").eq("room_code", code).maybeSingle(),
       admin.from("rooms").select("status").eq("code", code).maybeSingle(),

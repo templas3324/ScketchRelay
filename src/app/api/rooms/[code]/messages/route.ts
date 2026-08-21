@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { databaseErrorResponse, errorResponse } from "@/lib/api-response";
+import { readJsonBody } from "@/lib/api-request";
 import { validateChatMessage } from "@/lib/chat";
 import { findRoomMember, roomCodeFromPath } from "@/lib/room-server";
 import { roomSessionCookieName } from "@/lib/room-session";
@@ -11,12 +12,9 @@ export async function POST(request: Request, context: { params: Promise<{ code: 
   const code = roomCodeFromPath((await context.params).code);
   if (!code) return errorResponse("방 코드 형식이 올바르지 않아요.", 400);
 
-  let body: { content?: unknown };
-  try {
-    body = await request.json();
-  } catch {
-    return errorResponse("요청 형식이 올바르지 않아요.", 400);
-  }
+  const parsedBody = await readJsonBody(request, 4_000);
+  if (!("data" in parsedBody)) return errorResponse(parsedBody.error, parsedBody.status);
+  const body = parsedBody.data as { content?: unknown };
 
   const content = typeof body.content === "string" ? body.content.trim() : "";
   const validationMessage = validateChatMessage(content);
