@@ -9,5 +9,5 @@ const variants = { primary: "bg-[#ff6b4a] hover:bg-[#f45b3a]", secondary: "bg-[#
 const sizes = { default: "px-5 py-3.5", large: "px-5 py-4 text-lg" } as const;
 
 export function Button({ className = "", size = "default", variant = "primary", ...props }: ButtonProps) {
-  return <button className={`rounded-2xl border-2 border-[#272334] font-black text-white shadow-[3px_4px_0_#272334] transition hover:-translate-y-0.5 hover:shadow-[5px_7px_0_#272334] active:translate-y-1 active:shadow-none disabled:cursor-not-allowed disabled:opacity-60 ${variants[variant]} ${sizes[size]} ${className}`} {...props} />;
+  return <button className={`min-h-11 rounded-2xl border-2 border-[#272334] font-black text-white shadow-[3px_4px_0_#272334] transition hover:-translate-y-0.5 hover:shadow-[5px_7px_0_#272334] active:translate-y-1 active:shadow-none disabled:cursor-not-allowed disabled:opacity-60 ${variants[variant]} ${sizes[size]} ${className}`} {...props} />;
 }

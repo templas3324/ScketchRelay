@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const guideSteps = [
   ["1", "방에 모이기", "방장이 링크를 공유하고 모두 입장하면 게임을 시작해요."],
@@ -11,18 +11,41 @@ const guideSteps = [
 
 export function GameGuideButton() {
   const [open, setOpen] = useState(false);
+  const openerRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
   useEffect(() => {
     if (!open) return;
-    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setOpen(false); };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
+    const opener = openerRef.current;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    dialogRef.current?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+        return;
+      }
+      if (event.key !== "Tab" || !dialogRef.current) return;
+      const focusable = [...dialogRef.current.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter((element) => !element.hasAttribute("disabled"));
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      // 모달이 열린 동안 배경 화면으로 포커스가 빠져나가지 않도록 양 끝에서 순환시킨다.
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+      opener?.focus();
+    };
   }, [open]);
 
   return <>
-    <button type="button" onClick={() => setOpen(true)} className="rounded-full border-2 border-[#272334] bg-white px-3 py-1.5 text-sm font-black shadow-[2px_2px_0_#272334] hover:bg-[#fff2c7]">❔ 게임 방법</button>
+    <button ref={openerRef} type="button" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open} className="min-h-11 rounded-full border-2 border-[#272334] bg-white px-3 py-2 text-sm font-black shadow-[2px_2px_0_#272334] hover:bg-[#fff2c7]">❔ 게임 방법</button>
     {open && <div className="fixed inset-0 z-50 grid place-items-center bg-[#272334]/60 px-5" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setOpen(false); }}>
-      <section role="dialog" aria-modal="true" aria-labelledby="game-guide-title" className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[28px] border-[3px] border-[#272334] bg-[#fff8e8] p-6 text-[#272334] shadow-[8px_9px_0_#272334] sm:p-8">
-        <div className="flex items-center justify-between"><h2 id="game-guide-title" className="text-2xl font-black">게임 방법</h2><button type="button" onClick={() => setOpen(false)} aria-label="게임 방법 닫기" className="grid size-9 place-items-center rounded-full border-2 border-[#272334] bg-white font-black">✕</button></div>
+      <section ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="game-guide-title" className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-[28px] border-[3px] border-[#272334] bg-[#fff8e8] p-5 text-[#272334] shadow-[8px_9px_0_#272334] outline-none sm:p-8">
+        <div className="flex items-center justify-between"><h2 id="game-guide-title" className="text-2xl font-black">게임 방법</h2><button type="button" onClick={() => setOpen(false)} aria-label="게임 방법 닫기" className="grid size-11 place-items-center rounded-full border-2 border-[#272334] bg-white font-black">✕</button></div>
         <ol className="mt-6 grid gap-4">{guideSteps.map(([number, title, description]) => <li key={number} className="flex gap-3 rounded-2xl border-2 border-[#ded8e1] bg-white p-4"><span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#ffe17b] font-black">{number}</span><div><h3 className="font-black">{title}</h3><p className="mt-1 text-sm font-semibold leading-6 text-[#71697b]">{description}</p></div></li>)}</ol>
         <div className="mt-5 grid gap-3">
           <p className="rounded-2xl bg-[#fff2c7] p-4 text-sm font-bold leading-6 text-[#765916]">보드게임의 단어 카드 대신 자유 문장이나 랜덤 제시어로 시작하는 웹 버전이에요. 참가자 수만큼 전달하므로 마지막 결과는 인원에 따라 문장 또는 그림이 될 수 있어요.</p>

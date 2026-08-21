@@ -155,10 +155,10 @@ export function Lobby({ code }: { code: string }) {
   if (!snapshot) return <main className="grid min-h-screen place-items-center bg-[#fff8e8]"><p className="animate-pulse font-black">대기실을 불러오는 중...</p></main>;
 
   return (
-    <main className="min-h-screen bg-[#fff8e8] px-5 py-8 text-[#272334]">
+    <main className="min-h-screen bg-[#fff8e8] px-4 py-6 text-[#272334] sm:px-5 sm:py-8">
       <div className="mx-auto max-w-3xl">
-        <header className="flex items-center justify-between gap-3"><Link href="/" className="text-xl font-black">✏️ Scketch Relay</Link><div className="flex items-center gap-2"><GameGuideButton /><span className="hidden rounded-full bg-[#dff7f2] px-3 py-1 text-sm font-black sm:inline">{snapshot.room.status === "waiting" ? "참가자 대기 중" : "게임 시작됨"}</span></div></header>
-        <section className="mt-10 rounded-[32px] border-[3px] border-[#272334] bg-white p-6 shadow-[9px_10px_0_#272334] sm:p-9">
+        <header className="flex flex-wrap items-center justify-between gap-3"><Link href="/" className="text-lg font-black sm:text-xl">✏️ Scketch Relay</Link><div className="flex items-center gap-2"><GameGuideButton /><span className="hidden rounded-full bg-[#dff7f2] px-3 py-1 text-sm font-black sm:inline">{snapshot.room.status === "waiting" ? "참가자 대기 중" : "게임 시작됨"}</span></div></header>
+        <section className="mt-8 rounded-[26px] border-[3px] border-[#272334] bg-white p-4 shadow-[6px_7px_0_#272334] sm:mt-10 sm:rounded-[32px] sm:p-9 sm:shadow-[9px_10px_0_#272334]">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div><p className="text-sm font-black text-[#ff6b4a]">ROOM CODE</p><h1 className="font-mono text-4xl font-black tracking-[0.18em] sm:text-5xl">{code}</h1></div>
             <Button onClick={copyInvite} variant="secondary">초대 링크 복사</Button>
