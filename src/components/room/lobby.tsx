@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useState } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { StatusMessage } from "@/components/ui/status-message";
@@ -21,6 +21,8 @@ export function Lobby({ code }: { code: string }) {
   const [message, setMessage] = useState("");
   const [fatalError, setFatalError] = useState("");
   const [isPending, setIsPending] = useState(false);
+  const [chatContent, setChatContent] = useState("");
+  const [isChatPending, setIsChatPending] = useState(false);
 
   const refreshRoom = useCallback(async () => {
     const response = await fetch(`/api/rooms/${code}`, { cache: "no-store" });
@@ -45,7 +47,8 @@ export function Lobby({ code }: { code: string }) {
         }
 
         channel = supabase.channel(`room:${code}`, { config: { presence: { key: initial.currentPlayerId } } });
-        const handleChange = () => void refreshRoom().catch(() => setMessage("최신 참가자 정보를 불러오지 못했어요."));
+        // Broadcast payload는 변경 신호로만 쓰고, 실제 데이터는 참가 쿠키가 검증되는 API에서 다시 읽는다.
+        const handleChange = () => void refreshRoom().catch(() => setMessage("최신 대기실 정보를 불러오지 못했어요."));
         channel
           .on("broadcast", { event: "INSERT" }, handleChange)
           .on("broadcast", { event: "UPDATE" }, handleChange)
@@ -102,6 +105,27 @@ export function Lobby({ code }: { code: string }) {
     router.push("/");
   }
 
+  async function sendChatMessage(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!chatContent.trim() || snapshot?.room.status !== "waiting") return;
+
+    setIsChatPending(true);
+    const response = await fetch(`/api/rooms/${code}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: chatContent }),
+    });
+
+    if (!response.ok) {
+      setMessage(await readError(response, "메시지를 보내지 못했어요."));
+    } else {
+      setChatContent("");
+      setMessage("");
+      await refreshRoom();
+    }
+    setIsChatPending(false);
+  }
+
   if (fatalError) {
     return (
       <main className="grid min-h-screen place-items-center bg-[#fff8e8] px-5 text-center text-[#272334]">
@@ -128,6 +152,39 @@ export function Lobby({ code }: { code: string }) {
               return <li key={player.id} className="flex items-center gap-3 rounded-2xl border-2 border-[#ded8e1] bg-[#fffcf7] p-4"><span className="grid size-10 place-items-center rounded-full bg-[#ffe17b] font-black">{index + 1}</span><div className="min-w-0 flex-1"><p className="truncate font-black">{player.nickname}{player.id === snapshot.currentPlayerId && " (나)"}</p><p className={`text-xs font-bold ${online ? "text-[#29927e]" : "text-[#9a929f]"}`}>{online ? "● 온라인" : "○ 연결 끊김"}</p></div>{player.id === snapshot.room.host_player_id && <span className="rounded-full bg-[#fff2c7] px-2 py-1 text-xs font-black">방장</span>}</li>;
             })}
           </ul>
+          <section className="mt-8 rounded-2xl border-2 border-[#ded8e1] bg-[#fffcf7] p-4 sm:p-5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-black">대기실 채팅</h2>
+              <span className={`rounded-full px-2.5 py-1 text-xs font-black ${snapshot.room.status === "waiting" ? "bg-[#dff7f2] text-[#247865]" : "bg-[#eee9ef] text-[#71697b]"}`}>
+                {snapshot.room.status === "waiting" ? "채팅 가능" : "게임 중 잠김"}
+              </span>
+            </div>
+            <ul aria-live="polite" className="mt-3 flex h-56 flex-col gap-2 overflow-y-auto rounded-xl bg-white p-3">
+              {snapshot.messages.length === 0 ? (
+                <li className="m-auto text-sm font-bold text-[#9a929f]">첫 메시지를 남겨 보세요!</li>
+              ) : snapshot.messages.map((chatMessage) => (
+                <li key={chatMessage.id} className={`max-w-[85%] rounded-2xl px-3 py-2 ${chatMessage.author_player_id === snapshot.currentPlayerId ? "ml-auto bg-[#7f62d9] text-white" : "bg-[#f1edf2]"}`}>
+                  <p className={`text-xs font-black ${chatMessage.author_player_id === snapshot.currentPlayerId ? "text-[#e9e1ff]" : "text-[#71697b]"}`}>{chatMessage.author_nickname}</p>
+                  <p className="mt-0.5 break-words text-sm font-semibold">{chatMessage.content}</p>
+                </li>
+              ))}
+            </ul>
+            <form onSubmit={sendChatMessage} className="mt-3 flex gap-2">
+              <label htmlFor="chat-message" className="sr-only">채팅 메시지</label>
+              <input
+                id="chat-message"
+                value={chatContent}
+                onChange={(event) => setChatContent(event.target.value)}
+                maxLength={200}
+                disabled={snapshot.room.status !== "waiting" || isChatPending}
+                placeholder={snapshot.room.status === "waiting" ? "메시지를 입력하세요" : "게임이 시작되어 채팅이 잠겼어요"}
+                className="min-w-0 flex-1 rounded-xl border-2 border-[#d8d1dc] bg-white px-4 py-3 font-semibold outline-none focus:border-[#7f62d9] disabled:cursor-not-allowed disabled:bg-[#eee9ef]"
+              />
+              <Button type="submit" variant="secondary" disabled={!chatContent.trim() || snapshot.room.status !== "waiting" || isChatPending}>
+                전송
+              </Button>
+            </form>
+          </section>
           {message && <StatusMessage>{message}</StatusMessage>}
           <div className="mt-7 grid gap-3 sm:grid-cols-[1fr_auto]">
             {isHost ? <Button onClick={startGame} size="large" disabled={isPending || snapshot.players.length < 2 || snapshot.room.status !== "waiting"}>{snapshot.players.length < 2 ? "한 명 더 기다려 주세요" : "게임 시작하기"}</Button> : <div className="rounded-2xl bg-[#f3efff] px-5 py-4 text-center font-black text-[#6548bd]">방장이 게임을 시작할 때까지 기다려 주세요</div>}

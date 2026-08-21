@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { validateChatMessage } from "../src/lib/chat.ts";
 import { createRoomCode, isValidRoomCode, normalizeRoomCode, validateJoinRequest, validateNickname } from "../src/lib/room.ts";
 
 test("방 코드 입력을 대문자 영숫자 6자리까지 정규화한다", () => {
@@ -29,4 +30,10 @@ test("닉네임은 공백이 아니며 12자 이하여야 한다", () => {
   assert.equal(validateNickname("  "), "먼저 닉네임을 입력해 주세요.");
   assert.equal(validateNickname("1234567890123"), "닉네임은 12자 이하로 입력해 주세요.");
   assert.equal(validateNickname("그림왕"), null);
+});
+
+test("채팅 메시지는 공백이 아니며 200자 이하여야 한다", () => {
+  assert.equal(validateChatMessage("   "), "메시지를 입력해 주세요.");
+  assert.equal(validateChatMessage("가".repeat(201)), "메시지는 200자 이하로 입력해 주세요.");
+  assert.equal(validateChatMessage("안녕하세요!"), null);
 });

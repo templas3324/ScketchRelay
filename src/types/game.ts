@@ -64,5 +64,14 @@ export interface RoomSnapshot {
     created_at: string;
   };
   players: LobbyPlayer[];
+  messages: ChatMessage[];
   currentPlayerId: string;
+}
+
+export interface ChatMessage {
+  id: number;
+  author_player_id: string | null;
+  author_nickname: string;
+  content: string;
+  created_at: string;
 }

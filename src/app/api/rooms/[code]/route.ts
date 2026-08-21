@@ -14,15 +14,21 @@ export async function GET(_request: Request, context: { params: Promise<{ code: 
     const member = await findRoomMember(admin, code, cookieStore.get(roomSessionCookieName(code))?.value);
     if (!member) return errorResponse("이 방의 참가 정보를 찾을 수 없어요.", 401);
 
-    const [{ data: room, error: roomError }, { data: players, error: playersError }] = await Promise.all([
+    const [
+      { data: room, error: roomError },
+      { data: players, error: playersError },
+      { data: recentMessages, error: messagesError },
+    ] = await Promise.all([
       admin.from("rooms").select("code, status, host_player_id, max_players, round_seconds, created_at").eq("code", code).maybeSingle(),
       admin.from("players").select("id, nickname, joined_at").eq("room_code", code).order("joined_at"),
+      // 최신 50개만 읽은 뒤 응답에서는 오래된 메시지부터 보이도록 순서를 뒤집는다.
+      admin.from("chat_messages").select("id, author_player_id, author_nickname, content, created_at").eq("room_code", code).order("created_at", { ascending: false }).limit(50),
     ]);
 
-    if (roomError || playersError) throw roomError ?? playersError;
+    if (roomError || playersError || messagesError) throw roomError ?? playersError ?? messagesError;
     if (!room) return errorResponse("존재하지 않는 방이에요.", 404);
 
-    return Response.json({ room, players: players ?? [], currentPlayerId: member.id });
+    return Response.json({ room, players: players ?? [], messages: (recentMessages ?? []).reverse(), currentPlayerId: member.id });
   } catch (error) {
     return databaseErrorResponse(error);
   }
