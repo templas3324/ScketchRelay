@@ -1,29 +1,61 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { StatusMessage } from "@/components/ui/status-message";
-import { createRoomCode, normalizeRoomCode, validateJoinRequest } from "@/lib/room";
+import { normalizeRoomCode, validateJoinRequest, validateNickname } from "@/lib/room";
 
-export function RoomPanel() {
-  const [roomCode, setRoomCode] = useState("");
+export function RoomPanel({ initialRoomCode = "" }: { initialRoomCode?: string }) {
+  const router = useRouter();
+  const [roomCode, setRoomCode] = useState(initialRoomCode);
   const [nickname, setNickname] = useState("");
   const [message, setMessage] = useState("");
+  const [isPending, setIsPending] = useState(false);
 
-  function createRoom() {
-    const code = createRoomCode();
-    setMessage(`방 코드 ${code}가 생성됐어요. 친구에게 코드를 공유해 주세요.`);
+  async function request(path: string, body: object) {
+    const response = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = (await response.json()) as { code?: string; error?: string };
+    if (!response.ok || !data.code) throw new Error(data.error ?? "요청을 처리하지 못했어요.");
+    router.push(`/room/${data.code}`);
   }
 
-  function joinRoom(event: FormEvent<HTMLFormElement>) {
+  async function createRoom() {
+    const validationMessage = validateNickname(nickname);
+    if (validationMessage) {
+      setMessage(validationMessage);
+      return;
+    }
+    setIsPending(true);
+    setMessage("");
+    try {
+      await request("/api/rooms", { nickname });
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "방을 만들지 못했어요.");
+      setIsPending(false);
+    }
+  }
+
+  async function joinRoom(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const validationMessage = validateJoinRequest(nickname, roomCode);
     if (validationMessage) {
       setMessage(validationMessage);
       return;
     }
-    setMessage(`${nickname.trim()}님, ${roomCode} 방으로 입장할 준비가 됐어요!`);
+    setIsPending(true);
+    setMessage("");
+    try {
+      await request(`/api/rooms/${roomCode}/join`, { nickname });
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "방에 참가하지 못했어요.");
+      setIsPending(false);
+    }
   }
 
   return (
@@ -38,14 +70,14 @@ export function RoomPanel() {
           <div className="grid size-14 place-items-center rounded-full bg-[#dff7f2] text-3xl">🖍️</div>
         </div>
 
-        <Button onClick={createRoom} size="large" className="w-full">새 방 만들기</Button>
+        <Button onClick={createRoom} size="large" className="w-full" disabled={isPending}>{isPending ? "연결 중..." : "새 방 만들기"}</Button>
         <div className="my-6 flex items-center gap-3 text-xs font-black text-[#9a929f]">
           <span className="h-px flex-1 bg-[#ded8e1]" />또는 방 코드로 참가<span className="h-px flex-1 bg-[#ded8e1]" />
         </div>
         <form onSubmit={joinRoom} className="space-y-3">
           <FormField label="닉네임" value={nickname} onChange={(event) => setNickname(event.target.value)} maxLength={12} placeholder="예: 그림왕 피카소" />
           <FormField label="방 코드" value={roomCode} onChange={(event) => setRoomCode(normalizeRoomCode(event.target.value))} maxLength={6} placeholder="ABCDE" inputClassName="font-mono text-lg font-black uppercase tracking-[0.25em] placeholder:tracking-[0.25em]" />
-          <Button type="submit" variant="secondary" className="w-full">방 참가하기 →</Button>
+          <Button type="submit" variant="secondary" className="w-full" disabled={isPending}>{isPending ? "연결 중..." : "방 참가하기 →"}</Button>
         </form>
         {message && <StatusMessage>{message}</StatusMessage>}
       </div>

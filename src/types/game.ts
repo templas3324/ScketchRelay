@@ -47,3 +47,22 @@ export interface Relay {
   starterId: string;
   submissions: Submission[];
 }
+
+export interface LobbyPlayer {
+  id: string;
+  nickname: string;
+  joined_at: string;
+}
+
+export interface RoomSnapshot {
+  room: {
+    code: string;
+    status: RoomStatus;
+    host_player_id: string;
+    max_players: number;
+    round_seconds: number;
+    created_at: string;
+  };
+  players: LobbyPlayer[];
+  currentPlayerId: string;
+}

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createRoomCode, isValidRoomCode, normalizeRoomCode, validateJoinRequest } from "../src/lib/room.ts";
+import { createRoomCode, isValidRoomCode, normalizeRoomCode, validateJoinRequest, validateNickname } from "../src/lib/room.ts";
 
 test("방 코드 입력을 대문자 영숫자 6자리까지 정규화한다", () => {
   assert.equal(normalizeRoomCode("ab-cd!12x"), "ABCD12");
@@ -23,4 +23,10 @@ test("참가 요청에서 닉네임을 먼저 검증한다", () => {
   assert.equal(validateJoinRequest("  ", "ABCDE"), "먼저 닉네임을 입력해 주세요.");
   assert.equal(validateJoinRequest("릴레이", "ABC"), "방 코드는 영문 대문자와 숫자 4~6자리예요.");
   assert.equal(validateJoinRequest("릴레이", "ABCDE"), null);
+});
+
+test("닉네임은 공백이 아니며 12자 이하여야 한다", () => {
+  assert.equal(validateNickname("  "), "먼저 닉네임을 입력해 주세요.");
+  assert.equal(validateNickname("1234567890123"), "닉네임은 12자 이하로 입력해 주세요.");
+  assert.equal(validateNickname("그림왕"), null);
 });

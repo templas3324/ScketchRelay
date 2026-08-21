@@ -17,11 +17,17 @@ export function createRoomCode(random: () => number = Math.random): string {
 }
 
 export function validateJoinRequest(nickname: string, roomCode: string): string | null {
-  if (!nickname.trim()) {
-    return "먼저 닉네임을 입력해 주세요.";
-  }
+  const nicknameMessage = validateNickname(nickname);
+  if (nicknameMessage) return nicknameMessage;
   if (!isValidRoomCode(roomCode)) {
     return "방 코드는 영문 대문자와 숫자 4~6자리예요.";
   }
+  return null;
+}
+
+export function validateNickname(nickname: string): string | null {
+  const trimmedNickname = nickname.trim();
+  if (!trimmedNickname) return "먼저 닉네임을 입력해 주세요.";
+  if (trimmedNickname.length > 12) return "닉네임은 12자 이하로 입력해 주세요.";
   return null;
 }

@@ -1,7 +1,10 @@
 import { Hero } from "@/components/home/hero";
 import { RoomPanel } from "@/components/home/room-panel";
+import { normalizeRoomCode } from "@/lib/room";
 
-export default function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<{ room?: string | string[] }> }) {
+  const room = (await searchParams).room;
+  const initialRoomCode = normalizeRoomCode(typeof room === "string" ? room : "");
   return (
     <main className="min-h-screen overflow-hidden bg-[#fff8e8] text-[#272334]">
       <div className="pointer-events-none fixed inset-0 opacity-35 [background-image:radial-gradient(#ef9a61_1.2px,transparent_1.2px)] [background-size:24px_24px]" />
@@ -19,7 +22,7 @@ export default function Home() {
 
         <div className="grid flex-1 items-center gap-10 py-12 lg:grid-cols-[1.08fr_.92fr]">
           <Hero />
-          <RoomPanel />
+          <RoomPanel initialRoomCode={initialRoomCode} />
         </div>
 
         <footer className="relative flex flex-col gap-2 border-t-2 border-dashed border-[#cfc5bc] pt-5 text-xs font-semibold text-[#7d7482] sm:flex-row sm:items-center sm:justify-between">
