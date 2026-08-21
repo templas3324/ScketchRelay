@@ -121,6 +121,9 @@ npm run lint
 # 단위 테스트
 npm test
 
+# 로컬 서버와 Supabase를 사용하는 2인 핵심 흐름 통합 테스트
+npm run test:integration
+
 # 운영 빌드 검사
 npm run build
 
@@ -129,6 +132,8 @@ npm run start
 ```
 
 기능 작업을 완료할 때는 최소한 lint, test, build를 모두 통과시킨다.
+
+`test:integration`은 `TEST_BASE_URL` 또는 기본값 `http://localhost:3000`의 실행 중인 Next.js 서버를 대상으로 한다. `.env.local`의 Supabase 서버 환경 변수를 사용해 테스트가 만든 방을 성공·실패 여부와 관계없이 삭제하며, 삭제 후 남은 방이 0건인지 확인한다.
 
 ## 7. 데이터베이스 변경
 

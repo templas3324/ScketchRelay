@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test tests/room.test.ts"
+    "test": "node --experimental-strip-types --test tests/room.test.ts",
+    "test:integration": "node --env-file-if-exists=.env.local --test tests/integration/game-flow.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.3",
