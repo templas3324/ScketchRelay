@@ -105,7 +105,7 @@ export function Lobby({ code }: { code: string }) {
     const response = await fetch(`/api/rooms/${code}/settings`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ maxPlayers: Number(form.get("maxPlayers")), roundSeconds: Number(form.get("roundSeconds")), revealMode: form.get("revealMode") }),
+      body: JSON.stringify({ maxPlayers: Number(form.get("maxPlayers")), roundSeconds: Number(form.get("roundSeconds")), revealMode: form.get("revealMode"), promptMode: form.get("promptMode") }),
     });
     setMessage(response.ok ? "게임 설정을 저장했어요." : await readError(response, "게임 설정을 저장하지 못했어요."));
     if (response.ok) await refreshRoom();
@@ -172,11 +172,13 @@ export function Lobby({ code }: { code: string }) {
           </ul>
           <form onSubmit={updateSettings} className="mt-8 rounded-2xl border-2 border-[#ded8e1] bg-[#fff8e8] p-4 sm:p-5">
             <div className="flex items-center justify-between"><h2 className="text-lg font-black">게임 설정</h2>{!isHost && <span className="text-xs font-black text-[#71697b]">방장만 변경 가능</span>}</div>
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <label className="grid gap-1 text-sm font-black">최대 인원<select name="maxPlayers" defaultValue={snapshot.room.max_players} disabled={!isHost || isSettingsPending} className="rounded-xl border-2 border-[#d8d1dc] bg-white px-3 py-3">{[2,3,4,5,6,7,8].map((value) => <option key={value} value={value}>{value}명</option>)}</select></label>
               <label className="grid gap-1 text-sm font-black">라운드 시간<select name="roundSeconds" defaultValue={snapshot.room.round_seconds} disabled={!isHost || isSettingsPending} className="rounded-xl border-2 border-[#d8d1dc] bg-white px-3 py-3"><option value="60">60초</option><option value="90">90초</option><option value="120">120초</option></select></label>
+              <label className="grid gap-1 text-sm font-black">시작 방식<select name="promptMode" defaultValue={snapshot.room.prompt_mode} disabled={!isHost || isSettingsPending} className="rounded-xl border-2 border-[#d8d1dc] bg-white px-3 py-3"><option value="free">자유 문장</option><option value="random">랜덤 제시어</option></select></label>
               <label className="grid gap-1 text-sm font-black">공개 방식<select name="revealMode" defaultValue={snapshot.room.reveal_mode} disabled={!isHost || isSettingsPending} className="rounded-xl border-2 border-[#d8d1dc] bg-white px-3 py-3"><option value="host_controlled">방장 진행</option><option value="automatic">자동 공개</option></select></label>
             </div>
+            <p className="mt-3 text-sm font-bold leading-6 text-[#71697b]">자유 문장은 각자 첫 문장을 만들고, 랜덤 제시어는 서버가 참가자마다 다른 시작 문장을 정해 줘요.</p>
             {isHost && <Button type="submit" variant="secondary" disabled={isSettingsPending} className="mt-4 w-full">{isSettingsPending ? "저장 중..." : "설정 저장"}</Button>}
           </form>
           <section className="mt-8 rounded-2xl border-2 border-[#ded8e1] bg-[#fffcf7] p-4 sm:p-5">

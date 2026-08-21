@@ -19,7 +19,7 @@ export async function GET(_request: Request, context: { params: Promise<{ code: 
       { data: players, error: playersError },
       { data: recentMessages, error: messagesError },
     ] = await Promise.all([
-      admin.from("rooms").select("code, status, host_player_id, max_players, round_seconds, reveal_mode, created_at").eq("code", code).maybeSingle(),
+      admin.from("rooms").select("code, status, host_player_id, max_players, round_seconds, reveal_mode, prompt_mode, created_at").eq("code", code).maybeSingle(),
       admin.from("players").select("id, nickname, joined_at").eq("room_code", code).order("joined_at"),
       // 최신 50개만 읽은 뒤 응답에서는 오래된 메시지부터 보이도록 순서를 뒤집는다.
       admin.from("chat_messages").select("id, author_player_id, author_nickname, content, created_at").eq("room_code", code).order("created_at", { ascending: false }).limit(50),

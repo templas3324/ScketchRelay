@@ -1,4 +1,4 @@
-import type { RevealMode } from "@/types/game";
+import type { PromptMode, RevealMode } from "@/types/game";
 
 export const ROUND_SECONDS = [60, 90, 120] as const;
 
@@ -8,12 +8,14 @@ export function validateGameSettings(input: unknown, currentPlayers: number) {
   const maxPlayers = Number(value.maxPlayers);
   const roundSeconds = Number(value.roundSeconds);
   const revealMode = value.revealMode as RevealMode;
+  const promptMode = value.promptMode as PromptMode;
 
   if (!Number.isInteger(maxPlayers) || maxPlayers < 2 || maxPlayers > 8) return { error: "최대 인원은 2~8명으로 설정해 주세요." } as const;
   if (maxPlayers < currentPlayers) return { error: "최대 인원은 현재 참가자 수보다 작을 수 없어요." } as const;
   if (!ROUND_SECONDS.includes(roundSeconds as (typeof ROUND_SECONDS)[number])) return { error: "라운드 시간은 60초, 90초, 120초 중에서 선택해 주세요." } as const;
   if (revealMode !== "host_controlled" && revealMode !== "automatic") return { error: "공개 방식을 확인해 주세요." } as const;
-  return { value: { maxPlayers, roundSeconds, revealMode } } as const;
+  if (promptMode !== "free" && promptMode !== "random") return { error: "시작 방식을 확인해 주세요." } as const;
+  return { value: { maxPlayers, roundSeconds, revealMode, promptMode } } as const;
 }
 
 export function validateFirstSentence(input: unknown) {

@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { databaseErrorResponse, errorResponse } from "@/lib/api-response";
 import { findRoomMember, roomCodeFromPath } from "@/lib/room-server";
 import { roomSessionCookieName } from "@/lib/room-session";
+import { selectRandomPrompts } from "@/lib/prompts";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(_request: Request, context: { params: Promise<{ code: string }> }) {
@@ -12,7 +13,7 @@ export async function POST(_request: Request, context: { params: Promise<{ code:
     const member = await findRoomMember(admin, code, (await cookies()).get(roomSessionCookieName(code))?.value);
     if (!member) return errorResponse("이 방의 참가 정보를 찾을 수 없어요.", 401);
     const [{ data: room, error: roomError }, { data: players, error: playersError }] = await Promise.all([
-      admin.from("rooms").select("host_player_id, status, round_seconds").eq("code", code).maybeSingle(),
+      admin.from("rooms").select("host_player_id, status, round_seconds, prompt_mode").eq("code", code).maybeSingle(),
       admin.from("players").select("id").eq("room_code", code).order("joined_at"),
     ]);
     if (roomError || playersError) throw roomError ?? playersError;
@@ -25,7 +26,8 @@ export async function POST(_request: Request, context: { params: Promise<{ code:
     const { data: game, error: gameError } = await admin.from("games").insert({ room_code: code, total_rounds: players!.length, deadline }).select("id").single();
     if (gameError) throw gameError;
     // 연속된 REST 변경 중 하나가 실패해도 불완전한 게임을 남기지 않도록 보상 삭제한다.
-    const { error: relayError } = await admin.from("relays").insert(players!.map((player) => ({ game_id: game.id, room_code: code, starter_player_id: player.id })));
+    const prompts = room.prompt_mode === "random" ? selectRandomPrompts(players!.length) : [];
+    const { error: relayError } = await admin.from("relays").insert(players!.map((player, index) => ({ game_id: game.id, room_code: code, starter_player_id: player.id, initial_prompt: prompts[index] ?? null })));
     if (relayError) {
       await admin.from("games").delete().eq("id", game.id);
       throw relayError;

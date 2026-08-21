@@ -2,11 +2,13 @@ export type RoomStatus = "waiting" | "playing" | "revealing" | "finished";
 export type GamePhase = "writing" | "drawing";
 export type SubmissionKind = "text" | "drawing";
 export type RevealMode = "host_controlled" | "automatic";
+export type PromptMode = "free" | "random";
 
 export interface GameSettings {
   maxPlayers: number;
   roundSeconds: number;
   revealMode: RevealMode;
+  promptMode: PromptMode;
 }
 
 export interface Player {
@@ -64,6 +66,7 @@ export interface RoomSnapshot {
     max_players: number;
     round_seconds: number;
     reveal_mode: RevealMode;
+    prompt_mode: PromptMode;
     created_at: string;
   };
   players: LobbyPlayer[];

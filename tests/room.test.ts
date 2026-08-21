@@ -3,6 +3,7 @@ import test from "node:test";
 import { validateChatMessage } from "../src/lib/chat.ts";
 import { readJsonBody } from "../src/lib/api-request.ts";
 import { assignedStarterIndex, playerConnectionStatus, validateDrawing, validateFirstSentence, validateGameSettings } from "../src/lib/game.ts";
+import { RANDOM_PROMPTS, selectRandomPrompts } from "../src/lib/prompts.ts";
 import { createRoomCode, isValidRoomCode, normalizeRoomCode, validateJoinRequest, validateNickname } from "../src/lib/room.ts";
 
 test("방 코드 입력을 대문자 영숫자 6자리까지 정규화한다", () => {
@@ -41,8 +42,17 @@ test("채팅 메시지는 공백이 아니며 200자 이하여야 한다", () =>
 });
 
 test("게임 설정은 허용 범위와 현재 참가자 수를 검증한다", () => {
-  assert.equal(validateGameSettings({ maxPlayers: 2, roundSeconds: 90, revealMode: "automatic" }, 3).error, "최대 인원은 현재 참가자 수보다 작을 수 없어요.");
-  assert.deepEqual(validateGameSettings({ maxPlayers: 4, roundSeconds: 120, revealMode: "host_controlled" }, 3), { value: { maxPlayers: 4, roundSeconds: 120, revealMode: "host_controlled" } });
+  assert.equal(validateGameSettings({ maxPlayers: 2, roundSeconds: 90, revealMode: "automatic", promptMode: "free" }, 3).error, "최대 인원은 현재 참가자 수보다 작을 수 없어요.");
+  assert.equal(validateGameSettings({ maxPlayers: 4, roundSeconds: 90, revealMode: "automatic", promptMode: "card" }, 3).error, "시작 방식을 확인해 주세요.");
+  assert.deepEqual(validateGameSettings({ maxPlayers: 4, roundSeconds: 120, revealMode: "host_controlled", promptMode: "random" }, 3), { value: { maxPlayers: 4, roundSeconds: 120, revealMode: "host_controlled", promptMode: "random" } });
+});
+
+test("랜덤 제시어는 요청 인원만큼 중복 없이 선택한다", () => {
+  const prompts = selectRandomPrompts(8, () => 0);
+  assert.equal(prompts.length, 8);
+  assert.equal(new Set(prompts).size, 8);
+  assert.ok(prompts.every((prompt) => RANDOM_PROMPTS.includes(prompt)));
+  assert.throws(() => selectRandomPrompts(RANDOM_PROMPTS.length + 1), RangeError);
 });
 
 test("첫 문장은 공백이 아니며 120자 이하여야 한다", () => {

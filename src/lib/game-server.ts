@@ -9,7 +9,7 @@ export async function findAssignedRelay(admin: SupabaseClient, gameId: string, r
   const playerIndex = players?.findIndex((player) => player.id === playerId) ?? -1;
   if (playerIndex < 0 || !players?.length) return null;
   const starter = players[assignedStarterIndex(playerIndex, round, players.length)];
-  const { data: relay, error: relayError } = await admin.from("relays").select("id").eq("game_id", gameId).eq("starter_player_id", starter.id).maybeSingle();
+  const { data: relay, error: relayError } = await admin.from("relays").select("id, initial_prompt").eq("game_id", gameId).eq("starter_player_id", starter.id).maybeSingle();
   if (relayError) throw relayError;
   return relay;
 }

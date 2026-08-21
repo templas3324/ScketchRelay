@@ -30,7 +30,7 @@ export async function GET(_request: Request, context: { params: Promise<{ code: 
       admin.from("submissions").select("id", { count: "exact", head: true }).eq("game_id", game.id).eq("round", game.current_round),
       admin.from("players").select("id, nickname, last_seen_at, left_at", { count: "exact" }).eq("room_code", code).order("joined_at"),
       admin.from("submissions").select("id").eq("game_id", game.id).eq("author_player_id", member.id).eq("round", game.current_round).maybeSingle(),
-      game.current_round > 1 ? admin.from("submissions").select("kind, content").eq("relay_id", relay.id).eq("round", game.current_round - 1).maybeSingle() : Promise.resolve({ data: null, error: null }),
+      game.current_round > 1 ? admin.from("submissions").select("kind, content").eq("relay_id", relay.id).eq("round", game.current_round - 1).maybeSingle() : Promise.resolve({ data: relay.initial_prompt ? { kind: "text", content: relay.initial_prompt } : null, error: null }),
     ]);
     if (submittedError || playerError || ownError || promptResult.error) throw submittedError ?? playerError ?? ownError ?? promptResult.error;
     const playerStatuses = (players ?? []).map((player) => ({ id: player.id, nickname: player.nickname, status: playerConnectionStatus(player.last_seen_at, player.left_at) }));

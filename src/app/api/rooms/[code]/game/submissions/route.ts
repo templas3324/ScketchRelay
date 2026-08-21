@@ -25,10 +25,12 @@ export async function POST(request: Request, context: { params: Promise<{ code: 
     if (!game || room?.status !== "playing") return errorResponse("지금은 결과를 제출할 수 없어요.", 409);
     if (game.deadline && new Date(game.deadline).getTime() < Date.now()) return errorResponse("이번 라운드 작성 시간이 끝났어요.", 409);
 
-    const parsed = game.phase === "drawing" ? validateDrawing(body) : validateFirstSentence(body);
-    if (!parsed.value) return errorResponse(parsed.error ?? "제출 내용을 확인해 주세요.", 400);
     const relay = await findAssignedRelay(admin, game.id, code, member.id, game.current_round);
     if (!relay) return errorResponse("배정된 릴레이를 찾을 수 없어요.", 404);
+    // 랜덤 모드의 첫 제출은 클라이언트 본문을 신뢰하지 않고 릴레이에 저장된 제시어로 고정한다.
+    const submittedBody = game.current_round === 1 && relay.initial_prompt ? { content: relay.initial_prompt } : body;
+    const parsed = game.phase === "drawing" ? validateDrawing(submittedBody) : validateFirstSentence(submittedBody);
+    if (!parsed.value) return errorResponse(parsed.error ?? "제출 내용을 확인해 주세요.", 400);
     const { data, error } = await admin.from("submissions").insert({ game_id: game.id, room_code: code, relay_id: relay.id, author_player_id: member.id, round: game.current_round, kind: game.phase === "drawing" ? "drawing" : "text", content: parsed.value }).select("id, created_at").single();
     if (error?.code === "23505") return errorResponse("이번 라운드 결과는 한 번만 제출할 수 있어요.", 409);
     if (error) throw error;
