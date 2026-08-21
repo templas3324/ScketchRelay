@@ -1,10 +1,12 @@
 export type RoomStatus = "waiting" | "playing" | "revealing" | "finished";
 export type GamePhase = "writing" | "drawing";
 export type SubmissionKind = "text" | "drawing";
+export type RevealMode = "host_controlled" | "automatic";
 
 export interface GameSettings {
   maxPlayers: number;
   roundSeconds: number;
+  revealMode: RevealMode;
 }
 
 export interface Player {
@@ -61,11 +63,20 @@ export interface RoomSnapshot {
     host_player_id: string;
     max_players: number;
     round_seconds: number;
+    reveal_mode: RevealMode;
     created_at: string;
   };
   players: LobbyPlayer[];
   messages: ChatMessage[];
   currentPlayerId: string;
+}
+
+export interface GameSnapshot {
+  game: Game;
+  currentPlayerId: string;
+  submitted: boolean;
+  submittedCount: number;
+  playerCount: number;
 }
 
 export interface ChatMessage {

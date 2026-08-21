@@ -23,14 +23,16 @@ export function Lobby({ code }: { code: string }) {
   const [isPending, setIsPending] = useState(false);
   const [chatContent, setChatContent] = useState("");
   const [isChatPending, setIsChatPending] = useState(false);
+  const [isSettingsPending, setIsSettingsPending] = useState(false);
 
   const refreshRoom = useCallback(async () => {
     const response = await fetch(`/api/rooms/${code}`, { cache: "no-store" });
     if (!response.ok) throw new Error(await readError(response, "대기실을 불러오지 못했어요."));
     const nextSnapshot = (await response.json()) as RoomSnapshot;
     setSnapshot(nextSnapshot);
+    if (nextSnapshot.room.status === "playing") router.replace(`/room/${code}/game`);
     return nextSnapshot;
-  }, [code]);
+  }, [code, router]);
 
   useEffect(() => {
     let disposed = false;
@@ -90,8 +92,23 @@ export function Lobby({ code }: { code: string }) {
     setIsPending(true);
     const response = await fetch(`/api/rooms/${code}/start`, { method: "POST" });
     if (!response.ok) setMessage(await readError(response, "게임을 시작하지 못했어요."));
-    else setMessage("게임을 시작했어요. 다음 단계에서 게임 화면이 연결됩니다.");
+    else router.push(`/room/${code}/game`);
     setIsPending(false);
+  }
+
+  async function updateSettings(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!snapshot) return;
+    const form = new FormData(event.currentTarget);
+    setIsSettingsPending(true);
+    const response = await fetch(`/api/rooms/${code}/settings`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ maxPlayers: Number(form.get("maxPlayers")), roundSeconds: Number(form.get("roundSeconds")), revealMode: form.get("revealMode") }),
+    });
+    setMessage(response.ok ? "게임 설정을 저장했어요." : await readError(response, "게임 설정을 저장하지 못했어요."));
+    if (response.ok) await refreshRoom();
+    setIsSettingsPending(false);
   }
 
   async function leaveRoom() {
@@ -152,6 +169,15 @@ export function Lobby({ code }: { code: string }) {
               return <li key={player.id} className="flex items-center gap-3 rounded-2xl border-2 border-[#ded8e1] bg-[#fffcf7] p-4"><span className="grid size-10 place-items-center rounded-full bg-[#ffe17b] font-black">{index + 1}</span><div className="min-w-0 flex-1"><p className="truncate font-black">{player.nickname}{player.id === snapshot.currentPlayerId && " (나)"}</p><p className={`text-xs font-bold ${online ? "text-[#29927e]" : "text-[#9a929f]"}`}>{online ? "● 온라인" : "○ 연결 끊김"}</p></div>{player.id === snapshot.room.host_player_id && <span className="rounded-full bg-[#fff2c7] px-2 py-1 text-xs font-black">방장</span>}</li>;
             })}
           </ul>
+          <form onSubmit={updateSettings} className="mt-8 rounded-2xl border-2 border-[#ded8e1] bg-[#fff8e8] p-4 sm:p-5">
+            <div className="flex items-center justify-between"><h2 className="text-lg font-black">게임 설정</h2>{!isHost && <span className="text-xs font-black text-[#71697b]">방장만 변경 가능</span>}</div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <label className="grid gap-1 text-sm font-black">최대 인원<select name="maxPlayers" defaultValue={snapshot.room.max_players} disabled={!isHost || isSettingsPending} className="rounded-xl border-2 border-[#d8d1dc] bg-white px-3 py-3">{[2,3,4,5,6,7,8].map((value) => <option key={value} value={value}>{value}명</option>)}</select></label>
+              <label className="grid gap-1 text-sm font-black">라운드 시간<select name="roundSeconds" defaultValue={snapshot.room.round_seconds} disabled={!isHost || isSettingsPending} className="rounded-xl border-2 border-[#d8d1dc] bg-white px-3 py-3"><option value="60">60초</option><option value="90">90초</option><option value="120">120초</option></select></label>
+              <label className="grid gap-1 text-sm font-black">공개 방식<select name="revealMode" defaultValue={snapshot.room.reveal_mode} disabled={!isHost || isSettingsPending} className="rounded-xl border-2 border-[#d8d1dc] bg-white px-3 py-3"><option value="host_controlled">방장 진행</option><option value="automatic">자동 공개</option></select></label>
+            </div>
+            {isHost && <Button type="submit" variant="secondary" disabled={isSettingsPending} className="mt-4 w-full">{isSettingsPending ? "저장 중..." : "설정 저장"}</Button>}
+          </form>
           <section className="mt-8 rounded-2xl border-2 border-[#ded8e1] bg-[#fffcf7] p-4 sm:p-5">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-black">대기실 채팅</h2>
