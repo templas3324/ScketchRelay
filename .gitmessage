@@ -1,7 +1,7 @@
-# <종류>: <한글 변경 요약>
+# <type>: <한글 변경 요약>
 #
 # - 주요 변경 내용
 # - 중요한 구현 이유 또는 주의 사항
 # - 테스트 및 검증 결과
 #
-# 종류: 기능, 수정, 문서, 테스트, 리팩터링, 설정, 성능, 빌드
+# type: feat, fix, mod, docs, test, refactor, chore, style, perf, build, ci
