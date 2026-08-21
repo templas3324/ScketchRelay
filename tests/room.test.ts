@@ -49,6 +49,9 @@ test("게임 설정은 허용 범위와 현재 참가자 수를 검증한다", (
 
 test("랜덤 제시어는 요청 인원만큼 중복 없이 선택한다", () => {
   const prompts = selectRandomPrompts(8, () => 0);
+  assert.equal(RANDOM_PROMPTS.length, 200);
+  assert.equal(new Set(RANDOM_PROMPTS).size, RANDOM_PROMPTS.length);
+  assert.ok(RANDOM_PROMPTS.every((prompt) => prompt === prompt.trim() && prompt.length >= 1 && prompt.length <= 120));
   assert.equal(prompts.length, 8);
   assert.equal(new Set(prompts).size, 8);
   assert.ok(prompts.every((prompt) => RANDOM_PROMPTS.includes(prompt)));
