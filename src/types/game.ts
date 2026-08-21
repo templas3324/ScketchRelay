@@ -88,3 +88,26 @@ export interface ChatMessage {
   content: string;
   created_at: string;
 }
+
+export interface ResultSubmission {
+  id: string;
+  round: number;
+  kind: SubmissionKind;
+  content: string;
+  authorNickname: string;
+}
+
+export interface ResultRelay {
+  id: string;
+  starterNickname: string;
+  submissions: ResultSubmission[];
+}
+
+export interface ResultsSnapshot {
+  roomStatus: RoomStatus;
+  revealMode: RevealMode;
+  isHost: boolean;
+  revealedCount: number;
+  totalRelays: number;
+  relays: ResultRelay[];
+}

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { DrawingCanvas } from "@/components/game/drawing-canvas";
@@ -17,6 +18,7 @@ async function readError(response: Response, fallback: string) {
 }
 
 export function FirstSentence({ code }: { code: string }) {
+  const router = useRouter();
   const [snapshot, setSnapshot] = useState<GameSnapshot | null>(null);
   const [content, setContent] = useState("");
   const [message, setMessage] = useState("");
@@ -62,6 +64,10 @@ export function FirstSentence({ code }: { code: string }) {
     const expiryRefresh = window.setTimeout(() => void refresh().catch(() => setMessage("마감된 라운드를 갱신하지 못했어요.")), Math.max(0, new Date(snapshot.game.deadline).getTime() - Date.now()) + 250);
     return () => { window.clearInterval(timer); window.clearTimeout(expiryRefresh); };
   }, [refresh, snapshot?.game.deadline]);
+
+  useEffect(() => {
+    if (snapshot?.roomStatus === "revealing" || snapshot?.roomStatus === "finished") router.replace(`/room/${code}/results`);
+  }, [code, router, snapshot?.roomStatus]);
 
   async function submitValue(value: string) {
     setIsPending(true);
