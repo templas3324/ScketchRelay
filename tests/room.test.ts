@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { validateChatMessage } from "../src/lib/chat.ts";
-import { validateFirstSentence, validateGameSettings } from "../src/lib/game.ts";
+import { assignedStarterIndex, validateDrawing, validateFirstSentence, validateGameSettings } from "../src/lib/game.ts";
 import { createRoomCode, isValidRoomCode, normalizeRoomCode, validateJoinRequest, validateNickname } from "../src/lib/room.ts";
 
 test("방 코드 입력을 대문자 영숫자 6자리까지 정규화한다", () => {
@@ -47,4 +47,15 @@ test("게임 설정은 허용 범위와 현재 참가자 수를 검증한다", (
 test("첫 문장은 공백이 아니며 120자 이하여야 한다", () => {
   assert.equal(validateFirstSentence({ content: "  " }).error, "첫 문장은 1~120자로 입력해 주세요.");
   assert.deepEqual(validateFirstSentence({ content: "  하늘을 나는 고래  " }), { value: "하늘을 나는 고래" });
+});
+
+test("릴레이는 라운드마다 이전 참가자의 것을 순환 배정한다", () => {
+  assert.equal(assignedStarterIndex(0, 1, 3), 0);
+  assert.equal(assignedStarterIndex(0, 2, 3), 2);
+  assert.equal(assignedStarterIndex(1, 3, 3), 2);
+});
+
+test("그림은 크기가 제한된 PNG Data URL만 허용한다", () => {
+  assert.equal(validateDrawing({ content: "https://example.com/drawing.png" }).error, "PNG 형식의 그림만 제출할 수 있어요.");
+  assert.deepEqual(validateDrawing({ content: "data:image/png;base64,iVBORw0KGgoAAAA" }), { value: "data:image/png;base64,iVBORw0KGgoAAAA" });
 });

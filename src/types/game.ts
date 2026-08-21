@@ -77,6 +77,8 @@ export interface GameSnapshot {
   submitted: boolean;
   submittedCount: number;
   playerCount: number;
+  roomStatus: RoomStatus;
+  prompt: Pick<Submission, "kind" | "content"> | null;
 }
 
 export interface ChatMessage {
